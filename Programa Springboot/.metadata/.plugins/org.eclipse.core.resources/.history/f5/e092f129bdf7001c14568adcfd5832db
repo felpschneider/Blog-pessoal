@@ -1,0 +1,18 @@
+package com.generation.blogpessoal.model;
+
+import java.util.Date;
+
+public class Postagens {
+
+	private long id;
+
+	private String titulo;
+	
+	private String texto;
+	
+	private Date date;
+	
+	
+	
+	
+}
