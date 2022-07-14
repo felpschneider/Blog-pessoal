@@ -1,0 +1,135 @@
+package com.generation.blogpessoal.service;
+
+import java.nio.charset.Charset;
+import java.util.Optional;
+
+import org.apache.commons.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.generation.blogpessoal.model.UserLogin;
+import com.generation.blogpessoal.model.Usuario;
+import com.generation.blogpessoal.repository.UsuarioRepository;
+
+@Service
+public class UsuarioService {
+
+	@Autowired
+	private UsuarioRepository usuarioRepository;
+
+	public Optional<Usuario> cadastrarUsuario(Usuario usuario) {
+		if (usuarioRepository.findByUsuario(usuario.getUsuario()).isPresent())
+			return Optional.empty();
+
+		usuario.setSenha(criptografarSenha(usuario.getSenha()));
+
+		return Optional.of(usuarioRepository.save(usuario));
+	}
+
+	private String criptografarSenha(String senha) {
+
+		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+		return encoder.encode(senha);
+
+	}
+
+	private boolean compararSenhas(String senhaDigitada, String senhaBanco) {
+
+		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+		return encoder.matches(senhaDigitada, senhaBanco);
+
+	}
+	
+	private String gerarBasicToken(String usuario, String senha) {
+
+		String token = usuario + ":" + senha;
+		byte[] tokenBase64 = Base64.encodeBase64(token.getBytes(Charset.forName("US-ASCII")));
+		return "Basic " + new String(tokenBase64);
+
+	}
+
+	public Optional<UserLogin> logarUsuario(Optional<UserLogin> userLogin) {
+
+		Optional<Usuario> usuario = usuarioRepository.findByUsuario(userLogin.get().getUsuario());
+
+		if (usuario.isPresent()) {
+			if(compararSenhas(userLogin.get().getSenha(), usuario.get().getSenha())) {
+				userLogin.get().setId(usuario.get().getId());
+				userLogin.get().setNome(usuario.get().getNome());
+				userLogin.get().setFoto(usuario.get().getFoto());
+				userLogin.get().setToken(gerarBasicToken(userLogin.get().getUsuario(), userLogin.get().getSenha()));
+				userLogin.get().setSenha(usuario.get().getSenha());
+			
+				
+				return userLogin;
+			}
+			
+		}
+		return Optional.empty();
+	}
+
+	public Optional<UsuarioLogin> autenticarUsuario(Optional<UsuarioLogin> usuarioLogin) {
+
+		/**
+		 * Cria um objeto Optional do tipo Usuario para receber o resultado do 
+		 * método findByUsuario().
+		 * 
+		 * Observe que o método autenticarUsuario recebe como parâmetro um objeto da
+		 * Classe UsuarioLogin, ao invés de Usuario.
+		 * 
+		 * get() -> Se um valor estiver presente no objeto ele retorna o valor, caso contrário,
+		 * lança uma Exception NoSuchElementException. Então para usar get é preciso ter certeza 
+		 * de que o Optional não está vazio.
+		 * O get() funciona como uma chave que abre o Objeto Optional e permite acessar os Métodos
+		 * do Objeto encpsulado.
+		 * 
+		 */
+		Optional<Usuario> usuario = usuarioRepository.findByUsuario(usuarioLogin.get().getUsuario());
+
+		/**
+		 * Checa se o usuario existe
+		 */
+		if (usuario.isPresent()) {
+
+			/**
+			 *  Checa se a senha enviada, depois de criptografada, é igual a senha
+			 *  gravada no Banco de Dados, através do Método compararSenhas.
+			 * 
+			 *  O Método Retorna verdadeiro se as senhas forem iguais, e falso caso contrário.
+			 * 
+			 */
+			if (compararSenhas(usuarioLogin.get().getSenha(), usuario.get().getSenha())) {
+
+				/**
+				 * Se as senhas forem iguais, atualiza o objeto usuarioLogin com os dados 
+				 * recuperados do Banco de Dados e insere o Token Gerado através do Método
+				 * gerarBasicToken.
+				 * Desta forma, será possível exibir o nome e a foto do usuário no Frontend.
+				 */
+				usuarioLogin.get().setId(usuario.get().getId());
+				usuarioLogin.get().setNome(usuario.get().getNome());
+				usuarioLogin.get().setFoto(usuario.get().getFoto());
+				usuarioLogin.get().setToken(gerarBasicToken(usuarioLogin.get().getUsuario(), usuarioLogin.get().getSenha()));
+				usuarioLogin.get().setSenha(usuario.get().getSenha());
+
+				/**
+				 * Retorna o objeto usarioLogin atualizado para a classe UsuarioController.
+				 * A Classe controladora checará se deu tudo certo nesta operação e retornará
+				 * o status.
+				 */
+				return usuarioLogin;
+
+			}
+		}	
+		
+		/**
+		 * empty -> Retorna uma instância de Optional vazia, caso o usuário não seja encontrado.
+		 */
+		return Optional.empty();
+		
+	}
+	
+}
