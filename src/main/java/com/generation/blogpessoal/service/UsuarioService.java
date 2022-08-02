@@ -61,7 +61,6 @@ public class UsuarioService {
 			if (compararSenhas(userLogin.get().getSenha(), usuario.get().getSenha())) {
 				userLogin.get().setId(usuario.get().getId());
 				userLogin.get().setNome(usuario.get().getNome());
-				userLogin.get().setFoto(usuario.get().getFoto());
 				userLogin.get().setToken(gerarBasicToken(userLogin.get().getUsuario(), userLogin.get().getSenha()));
 				userLogin.get().setSenha(usuario.get().getSenha());
 
@@ -82,7 +81,6 @@ public class UsuarioService {
 
 				usuarioLogin.get().setId(usuario.get().getId());
 				usuarioLogin.get().setNome(usuario.get().getNome());
-				usuarioLogin.get().setFoto(usuario.get().getFoto());
 				usuarioLogin.get()
 						.setToken(gerarBasicToken(usuarioLogin.get().getUsuario(), usuarioLogin.get().getSenha()));
 				usuarioLogin.get().setSenha(usuario.get().getSenha());
